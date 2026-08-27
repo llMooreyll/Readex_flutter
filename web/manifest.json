@@ -1,11 +1,11 @@
 {
-    "name": "read_it_later",
-    "short_name": "read_it_later",
+    "name": "Read It Later",
+    "short_name": "Read It Later",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "A local-first read-it-later app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
