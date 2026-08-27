@@ -4,7 +4,6 @@ import 'package:read_it_later/features/articles/data/database/app_database.dart'
 import 'package:read_it_later/features/articles/data/import/article_html_sanitizer.dart';
 import 'package:read_it_later/features/articles/data/import/default_article_importer.dart';
 import 'package:read_it_later/features/articles/data/import/reader_mode_extractor.dart';
-import 'package:read_it_later/features/articles/data/import/tty_blog_source_adapter.dart';
 import 'package:read_it_later/features/articles/data/import/web_page_downloader.dart';
 import 'package:read_it_later/features/articles/data/repositories/drift_article_repository.dart';
 import 'package:read_it_later/features/articles/domain/article.dart';
@@ -33,7 +32,6 @@ final articleImporterProvider = Provider<ArticleImporter>((ref) {
     downloader: ref.watch(webPageDownloaderProvider),
     extractor: const ReaderModeExtractor(),
     sanitizer: ArticleHtmlSanitizer(),
-    sourceAdapters: [TtyBlogSourceAdapter()],
   );
 });
 

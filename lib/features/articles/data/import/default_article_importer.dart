@@ -7,7 +7,6 @@ import 'package:read_it_later/features/articles/domain/article_importer.dart';
 
 import 'article_extractor.dart';
 import 'article_html_sanitizer.dart';
-import 'article_source_adapter.dart';
 import 'web_page_downloader.dart';
 
 final class DefaultArticleImporter implements ArticleImporter {
@@ -15,14 +14,12 @@ final class DefaultArticleImporter implements ArticleImporter {
     required this.downloader,
     required this.extractor,
     required this.sanitizer,
-    this.sourceAdapters = const [],
     this.operationTimeout = const Duration(seconds: 30),
   });
 
   final WebPageDownloader downloader;
   final ArticleExtractor extractor;
   final ArticleHtmlSanitizer sanitizer;
-  final List<ArticleSourceAdapter> sourceAdapters;
   final Duration operationTimeout;
 
   @override
@@ -34,17 +31,6 @@ final class DefaultArticleImporter implements ArticleImporter {
   }
 
   Future<Result<ArticleDraft>> _import(Uri url) async {
-    for (final adapter in sourceAdapters) {
-      if (adapter.canHandle(url)) {
-        final extracted = await adapter.extract(url);
-        return _buildDraft(
-          sourceUrl: url,
-          resolvedUrl: url,
-          extracted: extracted,
-        );
-      }
-    }
-
     final downloaded = await downloader.download(url);
     if (downloaded is Failure<DownloadedPage>) {
       return Failure(downloaded.failure);

@@ -11,6 +11,19 @@ final class SanitizedArticle {
 }
 
 final class ArticleHtmlSanitizer {
+  static const _imageCandidateAttributes = [
+    'src',
+    'data-src',
+    'data-original',
+    'data-actualsrc',
+    'data-lazy-src',
+    'data-original-src',
+    'data-url',
+    'data-image',
+  ];
+
+  static const _imageSrcsetAttributes = ['srcset', 'data-srcset'];
+
   static const _allowedTags = {
     'a',
     'blockquote',
@@ -121,7 +134,7 @@ final class ArticleHtmlSanitizer {
         element.attributes['href'] = href;
       }
     } else if (element.localName == 'img') {
-      final src = _safeUrl(original['src'], baseUri);
+      final src = _safeImageUrl(original, baseUri);
       if (src == null) {
         element.remove();
         return;
@@ -134,15 +147,64 @@ final class ArticleHtmlSanitizer {
     }
   }
 
+  String? _safeImageUrl(Map<String, String> attributes, Uri baseUri) {
+    for (final attribute in _imageCandidateAttributes) {
+      final url = _safeUrl(attributes[attribute], baseUri);
+      if (url != null && !_isLikelyPlaceholder(Uri.parse(url))) {
+        return url;
+      }
+    }
+
+    for (final attribute in _imageSrcsetAttributes) {
+      for (final raw in _srcsetUrls(attributes[attribute]).toList().reversed) {
+        final url = _safeUrl(raw, baseUri);
+        if (url != null && !_isLikelyPlaceholder(Uri.parse(url))) {
+          return url;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  Iterable<String> _srcsetUrls(String? raw) sync* {
+    if (raw == null || raw.trim().isEmpty) {
+      return;
+    }
+
+    for (final candidate in raw.split(',')) {
+      final url = candidate.trim().split(RegExp(r'\s+')).firstOrNull;
+      if (url != null && url.isNotEmpty) {
+        yield url;
+      }
+    }
+  }
+
   String? _safeUrl(String? raw, Uri baseUri) {
     if (raw == null || raw.trim().isEmpty) {
       return null;
     }
-    final resolved = baseUri.resolve(raw.trim());
-    if (resolved.scheme.toLowerCase() != 'https' ||
-        resolved.userInfo.isNotEmpty) {
+
+    try {
+      final resolved = baseUri.resolve(raw.trim());
+      if (resolved.scheme.toLowerCase() != 'https' ||
+          resolved.userInfo.isNotEmpty) {
+        return null;
+      }
+      return resolved.toString();
+    } on FormatException {
       return null;
     }
-    return resolved.toString();
+  }
+
+  bool _isLikelyPlaceholder(Uri uri) {
+    final lowerPath = uri.path.toLowerCase();
+    final fileName = lowerPath.split('/').last;
+    if (lowerPath.contains('placeholder')) {
+      return true;
+    }
+    return fileName == 'blank.gif' ||
+        fileName == 'spacer.gif' ||
+        fileName == 'transparent.gif';
   }
 }

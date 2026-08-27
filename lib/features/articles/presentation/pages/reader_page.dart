@@ -102,6 +102,9 @@ final class _ReaderContent extends StatelessWidget {
                   HtmlWidget(
                     article.contentHtml,
                     baseUrl: Uri.parse(article.resolvedUrl),
+                    factoryBuilder: () => _ArticleHtmlWidgetFactory(
+                      referrer: article.resolvedUrl,
+                    ),
                     onTapUrl: _openUrl,
                     renderMode: RenderMode.column,
                     textStyle: theme.textTheme.bodyLarge?.copyWith(
@@ -114,6 +117,28 @@ final class _ReaderContent extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+final class _ArticleHtmlWidgetFactory extends WidgetFactory {
+  _ArticleHtmlWidgetFactory({required this.referrer});
+
+  final String referrer;
+
+  @override
+  ImageProvider? imageProviderFromNetwork(String url) {
+    if (url.isEmpty) {
+      return null;
+    }
+
+    return NetworkImage(
+      url,
+      headers: {
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*',
+        'Referer': referrer,
+        'User-Agent': 'ReadItLater/1.0 (Flutter; Android) AppleWebKit/537.36',
+      },
     );
   }
 }

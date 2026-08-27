@@ -53,6 +53,38 @@ void main() {
     expect(value.html, isNot(contains('file:///')));
   });
 
+  test('uses lazy image attributes when src is an unsafe placeholder', () {
+    final result = sanitizer.sanitize(
+      html:
+          '<p>${'Readable article text. ' * 4}</p>'
+          '<img src="https://example.com/img-placeholder.png" '
+          'data-original="//cdn.example.com/article/photo.jpg" '
+          'alt="Article photo">',
+      baseUri: baseUri,
+    );
+
+    expect(result, isA<Success<SanitizedArticle>>());
+    final value = (result as Success<SanitizedArticle>).value;
+    expect(
+      value.html,
+      contains('src="https://cdn.example.com/article/photo.jpg"'),
+    );
+    expect(value.html, contains('alt="Article photo"'));
+  });
+
+  test('uses the largest safe srcset candidate for lazy images', () {
+    final result = sanitizer.sanitize(
+      html:
+          '<p>${'Readable article text. ' * 4}</p>'
+          '<img data-srcset="/small.jpg 480w, /large.jpg 1120w">',
+      baseUri: baseUri,
+    );
+
+    expect(result, isA<Success<SanitizedArticle>>());
+    final value = (result as Success<SanitizedArticle>).value;
+    expect(value.html, contains('src="https://example.com/large.jpg"'));
+  });
+
   test('rejects content that is too short', () {
     final result = sanitizer.sanitize(
       html: '<p>Too short</p>',
