@@ -7,6 +7,7 @@ import 'package:read_it_later/features/articles/domain/article_importer.dart';
 
 import 'article_extractor.dart';
 import 'article_html_sanitizer.dart';
+import 'article_source_adapter.dart';
 import 'web_page_downloader.dart';
 
 final class DefaultArticleImporter implements ArticleImporter {
@@ -14,14 +15,36 @@ final class DefaultArticleImporter implements ArticleImporter {
     required this.downloader,
     required this.extractor,
     required this.sanitizer,
+    this.sourceAdapters = const [],
+    this.operationTimeout = const Duration(seconds: 30),
   });
 
   final WebPageDownloader downloader;
   final ArticleExtractor extractor;
   final ArticleHtmlSanitizer sanitizer;
+  final List<ArticleSourceAdapter> sourceAdapters;
+  final Duration operationTimeout;
 
   @override
-  Future<Result<ArticleDraft>> import(Uri url) async {
+  Future<Result<ArticleDraft>> import(Uri url) {
+    return _import(url).timeout(
+      operationTimeout,
+      onTimeout: () => const Failure(NetworkTimeoutFailure()),
+    );
+  }
+
+  Future<Result<ArticleDraft>> _import(Uri url) async {
+    for (final adapter in sourceAdapters) {
+      if (adapter.canHandle(url)) {
+        final extracted = await adapter.extract(url);
+        return _buildDraft(
+          sourceUrl: url,
+          resolvedUrl: url,
+          extracted: extracted,
+        );
+      }
+    }
+
     final downloaded = await downloader.download(url);
     if (downloaded is Failure<DownloadedPage>) {
       return Failure(downloaded.failure);
@@ -39,11 +62,28 @@ final class DefaultArticleImporter implements ArticleImporter {
     if (extracted is Failure<ExtractedArticle>) {
       return Failure(extracted.failure);
     }
+    return _buildDraft(
+      sourceUrl: url,
+      resolvedUrl: page.resolvedUri,
+      extracted: extracted,
+      sourceHtml: page.html,
+    );
+  }
+
+  Result<ArticleDraft> _buildDraft({
+    required Uri sourceUrl,
+    required Uri resolvedUrl,
+    required Result<ExtractedArticle> extracted,
+    String? sourceHtml,
+  }) {
+    if (extracted is Failure<ExtractedArticle>) {
+      return Failure(extracted.failure);
+    }
     final article = (extracted as Success<ExtractedArticle>).value;
 
     final sanitized = sanitizer.sanitize(
       html: article.content,
-      baseUri: page.resolvedUri,
+      baseUri: resolvedUrl,
     );
     if (sanitized is Failure<SanitizedArticle>) {
       return Failure(sanitized.failure);
@@ -54,18 +94,18 @@ final class DefaultArticleImporter implements ArticleImporter {
       return const Failure(ArticleNotReadableFailure());
     }
 
-    final document = html_parser.parse(page.html);
+    final document = sourceHtml == null ? null : html_parser.parse(sourceHtml);
     final canonicalRaw = document
-        .querySelector('link[rel="canonical"]')
+        ?.querySelector('link[rel="canonical"]')
         ?.attributes['href'];
     final canonicalUrl = canonicalRaw == null
         ? null
-        : page.resolvedUri.resolve(canonicalRaw).toString();
+        : resolvedUrl.resolve(canonicalRaw).toString();
 
     return Success(
       ArticleDraft(
-        sourceUrl: url.toString(),
-        resolvedUrl: page.resolvedUri.toString(),
+        sourceUrl: sourceUrl.toString(),
+        resolvedUrl: resolvedUrl.toString(),
         canonicalUrl: canonicalUrl,
         title: title,
         excerpt: article.excerpt,

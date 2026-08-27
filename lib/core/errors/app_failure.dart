@@ -45,6 +45,20 @@ final class UnsupportedContentFailure extends AppFailure {
     : super('This URL does not point to a readable HTML webpage.');
 }
 
+final class VerificationRequiredFailure extends AppFailure {
+  const VerificationRequiredFailure()
+    : super(
+        'This website requires verification before the article can be downloaded.',
+      );
+}
+
+final class DynamicContentFailure extends AppFailure {
+  const DynamicContentFailure()
+    : super(
+        'This webpage loads its article content dynamically and cannot be imported yet.',
+      );
+}
+
 final class ContentTooLargeFailure extends AppFailure {
   const ContentTooLargeFailure() : super('This webpage is too large to save.');
 }

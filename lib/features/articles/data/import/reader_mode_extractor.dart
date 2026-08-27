@@ -16,6 +16,11 @@ final class ReaderModeExtractor implements ArticleExtractor {
     required Uri baseUri,
   }) async {
     try {
+      final pageKind = _detectPageKind(html);
+      if (pageKind != null) {
+        return Failure(pageKind);
+      }
+
       final values = await Isolate.run(
         () => _parseInIsolate(html, baseUri.toString()),
       );
@@ -44,26 +49,49 @@ final class ReaderModeExtractor implements ArticleExtractor {
 }
 
 Map<String, String?>? _parseInIsolate(String html, String baseUri) {
-  final article = parse(
-    html,
-    parser: ParserType.jsdom,
-    baseUri: baseUri,
-    charThreshold: 200,
-  );
-  if (article == null ||
-      article.title.trim().isEmpty ||
-      article.textContent.trim().length < 40) {
-    return null;
+  for (final parser in [ParserType.jsdom, ParserType.html]) {
+    final article = parse(
+      html,
+      parser: parser,
+      baseUri: baseUri,
+      charThreshold: 200,
+    );
+    if (article == null ||
+        article.title.trim().isEmpty ||
+        article.textContent.trim().length < 40) {
+      continue;
+    }
+
+    return <String, String?>{
+      'title': article.title.trim(),
+      'content': article.content,
+      'textContent': article.textContent.trim(),
+      'excerpt': article.excerpt?.trim(),
+      'byline': article.byline?.trim(),
+      'siteName': article.siteName?.trim(),
+      'language': article.lang?.trim(),
+      'publishedTime': article.publishedTime?.trim(),
+    };
   }
 
-  return <String, String?>{
-    'title': article.title.trim(),
-    'content': article.content,
-    'textContent': article.textContent.trim(),
-    'excerpt': article.excerpt?.trim(),
-    'byline': article.byline?.trim(),
-    'siteName': article.siteName?.trim(),
-    'language': article.lang?.trim(),
-    'publishedTime': article.publishedTime?.trim(),
-  };
+  return null;
+}
+
+AppFailure? _detectPageKind(String html) {
+  final lower = html.toLowerCase();
+  if (lower.contains('wappoc_appmsgcaptcha') ||
+      lower.contains('secitptpage/verify') ||
+      lower.contains('完成验证后即可继续访问') ||
+      lower.contains('当前环境异常')) {
+    return const VerificationRequiredFailure();
+  }
+
+  if (lower.contains('__next_f') &&
+      !lower.contains('<article') &&
+      !lower.contains('article-body') &&
+      !lower.contains('post-content')) {
+    return const DynamicContentFailure();
+  }
+
+  return null;
 }

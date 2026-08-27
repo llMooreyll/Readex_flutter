@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import 'package:read_it_later/features/articles/application/save_article_use_case.dart';
 import 'package:read_it_later/features/articles/data/database/app_database.dart';
 import 'package:read_it_later/features/articles/data/import/article_html_sanitizer.dart';
 import 'package:read_it_later/features/articles/data/import/default_article_importer.dart';
 import 'package:read_it_later/features/articles/data/import/reader_mode_extractor.dart';
+import 'package:read_it_later/features/articles/data/import/tty_blog_source_adapter.dart';
 import 'package:read_it_later/features/articles/data/import/web_page_downloader.dart';
 import 'package:read_it_later/features/articles/data/repositories/drift_article_repository.dart';
 import 'package:read_it_later/features/articles/domain/article.dart';
@@ -24,14 +24,8 @@ final articleRepositoryProvider = Provider<ArticleRepository>((ref) {
   return DriftArticleRepository(ref.watch(appDatabaseProvider));
 });
 
-final httpClientProvider = Provider<http.Client>((ref) {
-  final client = http.Client();
-  ref.onDispose(client.close);
-  return client;
-});
-
 final webPageDownloaderProvider = Provider<WebPageDownloader>((ref) {
-  return WebPageDownloader(client: ref.watch(httpClientProvider));
+  return WebPageDownloader();
 });
 
 final articleImporterProvider = Provider<ArticleImporter>((ref) {
@@ -39,6 +33,7 @@ final articleImporterProvider = Provider<ArticleImporter>((ref) {
     downloader: ref.watch(webPageDownloaderProvider),
     extractor: const ReaderModeExtractor(),
     sanitizer: ArticleHtmlSanitizer(),
+    sourceAdapters: [TtyBlogSourceAdapter()],
   );
 });
 

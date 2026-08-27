@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:read_it_later/core/errors/app_failure.dart';
 import 'package:read_it_later/core/result/result.dart';
 
+import 'http_client_factory.dart';
+
 class DownloadedPage {
   const DownloadedPage({
     required this.html,
@@ -20,16 +22,17 @@ class DownloadedPage {
 
 final class WebPageDownloader {
   WebPageDownloader({
-    required this._client,
+    this.clientFactory = http.Client.new,
     this.maxBytes = 5 * 1024 * 1024,
     this.timeout = const Duration(seconds: 15),
   });
 
-  final http.Client _client;
+  final HttpClientFactory clientFactory;
   final int maxBytes;
   final Duration timeout;
 
   Future<Result<DownloadedPage>> download(Uri url) async {
+    final client = clientFactory();
     try {
       final request = http.Request('GET', url)
         ..followRedirects = true
@@ -40,7 +43,7 @@ final class WebPageDownloader {
           'User-Agent': 'ReadItLater/1.0 (Flutter; Android) AppleWebKit/537.36',
         });
 
-      final response = await _client.send(request).timeout(timeout);
+      final response = await client.send(request).timeout(timeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return Failure(HttpStatusFailure(response.statusCode));
       }
@@ -81,6 +84,8 @@ final class WebPageDownloader {
       return Failure(
         NetworkUnavailableFailure(technicalMessage: error.toString()),
       );
+    } finally {
+      client.close();
     }
   }
 }
