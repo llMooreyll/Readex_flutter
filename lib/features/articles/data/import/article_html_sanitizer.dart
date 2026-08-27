@@ -26,6 +26,7 @@ final class ArticleHtmlSanitizer {
 
   static const _allowedTags = {
     'a',
+    'b',
     'blockquote',
     'br',
     'code',
@@ -41,6 +42,7 @@ final class ArticleHtmlSanitizer {
     'h6',
     'hr',
     'img',
+    'i',
     'li',
     'ol',
     'p',
@@ -127,23 +129,86 @@ final class ArticleHtmlSanitizer {
   void _sanitizeAttributes(Element element, Uri baseUri) {
     final original = Map<String, String>.from(element.attributes);
     element.attributes.clear();
+    _preserveIdAndTitle(element, original);
 
-    if (element.localName == 'a') {
-      final href = _safeUrl(original['href'], baseUri);
-      if (href != null) {
-        element.attributes['href'] = href;
-      }
-    } else if (element.localName == 'img') {
-      final src = _safeImageUrl(original, baseUri);
-      if (src == null) {
-        element.remove();
-        return;
-      }
-      element.attributes['src'] = src;
-      final alt = original['alt']?.trim();
-      if (alt != null && alt.isNotEmpty) {
-        element.attributes['alt'] = alt;
-      }
+    switch (element.localName) {
+      case 'a':
+        final href = _safeLinkUrl(original['href'], baseUri);
+        if (href != null) {
+          element.attributes['href'] = href;
+        }
+        break;
+      case 'blockquote':
+        final cite = _safeUrl(original['cite'], baseUri);
+        if (cite != null) {
+          element.attributes['cite'] = cite;
+        }
+        break;
+      case 'img':
+        _sanitizeImageAttributes(element, original, baseUri);
+        break;
+      case 'table':
+        _copyPositiveIntegerAttribute(element, original, 'border');
+        _copyPositiveIntegerAttribute(element, original, 'cellpadding');
+        _copyPositiveIntegerAttribute(element, original, 'cellspacing');
+        break;
+      case 'td':
+      case 'th':
+        _copyPositiveIntegerAttribute(element, original, 'colspan');
+        _copyPositiveIntegerAttribute(element, original, 'rowspan');
+        final scope = original['scope']?.trim().toLowerCase();
+        if (scope == 'row' ||
+            scope == 'col' ||
+            scope == 'rowgroup' ||
+            scope == 'colgroup') {
+          element.attributes['scope'] = scope!;
+        }
+        break;
+    }
+  }
+
+  void _preserveIdAndTitle(Element element, Map<String, String> original) {
+    final id = original['id']?.trim();
+    if (id != null && _isSafeId(id)) {
+      element.attributes['id'] = id;
+    }
+    final title = original['title']?.trim();
+    if (title != null && title.isNotEmpty) {
+      element.attributes['title'] = title;
+    }
+  }
+
+  bool _isSafeId(String value) =>
+      value.length <= 128 &&
+      RegExp(r'^[A-Za-z][A-Za-z0-9_:.\-]*$').hasMatch(value);
+
+  void _sanitizeImageAttributes(
+    Element element,
+    Map<String, String> original,
+    Uri baseUri,
+  ) {
+    final src = _safeImageUrl(original, baseUri);
+    if (src == null) {
+      element.remove();
+      return;
+    }
+    element.attributes['src'] = src;
+    final alt = original['alt']?.trim();
+    if (alt != null && alt.isNotEmpty) {
+      element.attributes['alt'] = alt;
+    }
+    _copyPositiveIntegerAttribute(element, original, 'width');
+    _copyPositiveIntegerAttribute(element, original, 'height');
+  }
+
+  void _copyPositiveIntegerAttribute(
+    Element element,
+    Map<String, String> original,
+    String name,
+  ) {
+    final value = int.tryParse(original[name]?.trim() ?? '');
+    if (value != null && value > 0 && value <= 10000) {
+      element.attributes[name] = value.toString();
     }
   }
 
@@ -195,6 +260,18 @@ final class ArticleHtmlSanitizer {
     } on FormatException {
       return null;
     }
+  }
+
+  String? _safeLinkUrl(String? raw, Uri baseUri) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    if (value.startsWith('#')) {
+      final fragment = value.substring(1);
+      return _isSafeId(fragment) ? value : null;
+    }
+    return _safeUrl(value, baseUri);
   }
 
   bool _isLikelyPlaceholder(Uri uri) {

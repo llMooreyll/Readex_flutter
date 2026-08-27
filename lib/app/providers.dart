@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:read_it_later/features/articles/application/delete_article_use_case.dart';
 import 'package:read_it_later/features/articles/application/save_article_use_case.dart';
 import 'package:read_it_later/features/articles/data/database/app_database.dart';
 import 'package:read_it_later/features/articles/data/import/article_html_sanitizer.dart';
@@ -40,6 +41,10 @@ final saveArticleUseCaseProvider = Provider<SaveArticleUseCase>((ref) {
     repository: ref.watch(articleRepositoryProvider),
     importer: ref.watch(articleImporterProvider),
   );
+});
+
+final deleteArticleUseCaseProvider = Provider<DeleteArticleUseCase>((ref) {
+  return DeleteArticleUseCase(repository: ref.watch(articleRepositoryProvider));
 });
 
 final saveArticleControllerProvider =

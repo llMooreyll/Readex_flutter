@@ -85,6 +85,51 @@ void main() {
     expect(value.html, contains('src="https://example.com/large.jpg"'));
   });
 
+  test('preserves article semantics and safe structural attributes', () {
+    final result = sanitizer.sanitize(
+      html:
+          '<article id="story">'
+          '<p><b>Bold</b> <i>italic</i> <u>underlined</u> '
+          '<s>removed</s> H<sub>2</sub>O x<sup>2</sup></p>'
+          '<blockquote cite="/quote">Quoted text</blockquote>'
+          '<pre><code>final value = 42;</code></pre>'
+          '<figure><img src="/photo.jpg" width="640" height="360">'
+          '<figcaption>Photo caption</figcaption></figure>'
+          '<table border="1"><thead><tr><th scope="col">Name</th></tr></thead>'
+          '<tbody><tr><td>Value</td></tr></tbody></table>'
+          '</article><style>bad</style>',
+      baseUri: baseUri,
+    );
+
+    expect(result, isA<Success<SanitizedArticle>>());
+    final value = (result as Success<SanitizedArticle>).value;
+    expect(value.html, contains('<b>Bold</b>'));
+    expect(value.html, contains('<i>italic</i>'));
+    expect(
+      value.html,
+      contains('<blockquote cite="https://example.com/quote">'),
+    );
+    expect(value.html, contains('<pre><code>final value = 42;</code></pre>'));
+    expect(value.html, contains('<figcaption>Photo caption</figcaption>'));
+    expect(value.html, contains('scope="col"'));
+    expect(value.html, isNot(contains('<style')));
+  });
+
+  test('keeps in-page anchors but removes unsafe external schemes', () {
+    final result = sanitizer.sanitize(
+      html:
+          '<p>${'Readable article text. ' * 4}</p>'
+          '<a href="#footnote-1">Footnote</a>'
+          '<a href="javascript:alert(1)">Unsafe</a>',
+      baseUri: baseUri,
+    );
+
+    expect(result, isA<Success<SanitizedArticle>>());
+    final value = (result as Success<SanitizedArticle>).value;
+    expect(value.html, contains('href="#footnote-1"'));
+    expect(value.html, contains('<a>Unsafe</a>'));
+  });
+
   test('rejects content that is too short', () {
     final result = sanitizer.sanitize(
       html: '<p>Too short</p>',

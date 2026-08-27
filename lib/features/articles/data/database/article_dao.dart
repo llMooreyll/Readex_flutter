@@ -70,6 +70,7 @@ final class ArticleDao extends DatabaseAccessor<AppDatabase>
       author: row.author,
       siteName: row.siteName,
       estimatedReadingMinutes: row.estimatedReadingMinutes,
+      isLinkOnly: row.extractorVersion.startsWith('link-only/'),
       savedAt: row.savedAt.toLocal(),
     );
   }

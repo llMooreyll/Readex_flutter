@@ -34,4 +34,6 @@ class Article {
   final String extractorVersion;
   final DateTime savedAt;
   final DateTime updatedAt;
+
+  bool get isLinkOnly => extractorVersion.startsWith('link-only/');
 }

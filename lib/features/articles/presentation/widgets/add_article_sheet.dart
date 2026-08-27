@@ -93,27 +93,37 @@ final class _AddArticleSheetState extends ConsumerState<AddArticleSheet> {
                 ),
               ),
             ),
-            if (state.failure != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                state.failure!.message,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-            if (state.isSaving) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(state.progressLabel)),
-                ],
-              ),
-            ],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: state.failure != null
+                  ? Padding(
+                      key: const ValueKey('failure'),
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        state.failure!.message,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    )
+                  : state.isSaving
+                  ? Padding(
+                      key: const ValueKey('saving'),
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Row(
+                        children: [
+                          const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(state.progressLabel)),
+                        ],
+                      ),
+                    )
+                  : const SizedBox(key: ValueKey('idle')),
+            ),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: state.isSaving ? null : _save,

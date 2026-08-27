@@ -2,18 +2,23 @@ import 'package:go_router/go_router.dart';
 
 import '../features/articles/presentation/pages/library_page.dart';
 import '../features/articles/presentation/pages/reader_page.dart';
+import 'app_transitions.dart';
 
 final appRouter = GoRouter(
   routes: [
-    GoRoute(path: '/', builder: (context, state) => const LibraryPage()),
+    GoRoute(
+      path: '/',
+      pageBuilder: (context, state) =>
+          AppTransitions.fade(state: state, child: const LibraryPage()),
+    ),
     GoRoute(
       path: '/article/:id',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final id = int.tryParse(state.pathParameters['id'] ?? '');
-        if (id == null) {
-          return const ReaderPage.invalidId();
-        }
-        return ReaderPage(id: id);
+        final child = id == null
+            ? const ReaderPage.invalidId()
+            : ReaderPage(id: id);
+        return AppTransitions.sharedAxis(state: state, child: child);
       },
     ),
   ],

@@ -7,6 +7,7 @@ class ArticleListItem {
     required this.author,
     required this.siteName,
     required this.estimatedReadingMinutes,
+    required this.isLinkOnly,
     required this.savedAt,
   });
 
@@ -17,5 +18,6 @@ class ArticleListItem {
   final String? author;
   final String? siteName;
   final int estimatedReadingMinutes;
+  final bool isLinkOnly;
   final DateTime savedAt;
 }

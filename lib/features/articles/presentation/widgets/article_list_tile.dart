@@ -6,11 +6,13 @@ final class ArticleListTile extends StatelessWidget {
   const ArticleListTile({
     required this.article,
     required this.onTap,
+    required this.onDelete,
     super.key,
   });
 
   final ArticleListItem article;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,9 @@ final class ArticleListTile extends StatelessWidget {
       source,
       if (byline != null && byline.isNotEmpty) byline,
       DateFormat('MMM d, yyyy').format(article.savedAt),
-      '${article.estimatedReadingMinutes} min read',
+      article.isLinkOnly
+          ? 'Saved link'
+          : '${article.estimatedReadingMinutes} min read',
     ].join('  •  ');
 
     return ListTile(
@@ -62,10 +66,26 @@ final class ArticleListTile extends StatelessWidget {
           ],
         ),
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        color: theme.colorScheme.onSurfaceVariant,
+      trailing: PopupMenuButton<_ArticleAction>(
+        tooltip: 'Article actions',
+        onSelected: (action) {
+          switch (action) {
+            case _ArticleAction.delete:
+              onDelete();
+          }
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(
+            value: _ArticleAction.delete,
+            child: ListTile(
+              leading: Icon(Icons.delete_outline),
+              title: Text('Delete'),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
+
+enum _ArticleAction { delete }
