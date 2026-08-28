@@ -13,7 +13,7 @@ final themeModeProvider = StateNotifierProvider<ThemeModeController, ThemeMode>(
 );
 
 final class ThemeModeController extends StateNotifier<ThemeMode> {
-  ThemeModeController() : super(ThemeMode.system) {
+  ThemeModeController() : super(ThemeMode.light) {
     unawaited(_load());
   }
 
@@ -33,7 +33,7 @@ final class ThemeModeController extends StateNotifier<ThemeMode> {
     }
 
     final mode = ThemeMode.values.where((value) => value.name == saved);
-    if (mode.isNotEmpty) {
+    if (mode.isNotEmpty && mode.first != ThemeMode.system) {
       state = mode.first;
     }
   }

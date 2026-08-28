@@ -3,6 +3,7 @@ import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:read_it_later/app/providers.dart';
 import 'package:read_it_later/features/articles/domain/article_draft.dart';
+import 'package:read_it_later/app/haptics.dart';
 
 final class ArticlePreviewSheet extends ConsumerStatefulWidget {
   const ArticlePreviewSheet({required this.draft, super.key});
@@ -49,6 +50,7 @@ final class _ArticlePreviewSheetState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    Haptics.medium();
     setState(() => _saving = true);
     final draft = widget.draft.withMetadata(
       title: _titleController.text,
@@ -218,7 +220,10 @@ final class _ArticlePreviewSheetState
                         child: OutlinedButton.icon(
                           onPressed: _saving
                               ? null
-                              : () => Navigator.of(context).pop(false),
+                              : () {
+                                  Haptics.light();
+                                  Navigator.of(context).pop(false);
+                                },
                           icon: const Icon(Icons.delete_outline),
                           label: const Text('Discard'),
                         ),

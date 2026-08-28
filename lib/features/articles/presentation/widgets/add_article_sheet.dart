@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers.dart';
 import '../../../../app/responsive_navigation.dart';
+import '../../../../app/haptics.dart';
 import 'article_preview_sheet.dart';
 
 final class AddArticleSheet extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ final class _AddArticleSheetState extends ConsumerState<AddArticleSheet> {
   }
 
   Future<void> _pasteUrl() async {
+    Haptics.light();
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text?.trim();
     if (text == null || text.isEmpty) {
@@ -39,6 +41,7 @@ final class _AddArticleSheetState extends ConsumerState<AddArticleSheet> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    Haptics.medium();
     FocusScope.of(context).unfocus();
     final draft = await ref
         .read(saveArticleControllerProvider.notifier)

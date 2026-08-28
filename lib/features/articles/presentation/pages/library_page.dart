@@ -8,6 +8,8 @@ import '../../../../app/providers.dart';
 import '../../../../app/responsive.dart';
 import '../../../../app/responsive_navigation.dart';
 import '../../../../app/motion.dart';
+import '../../../../app/haptics.dart';
+import '../../../../app/snackbar.dart';
 import '../../../../app/theme_mode_menu.dart';
 import '../../domain/article_list_item.dart';
 import '../widgets/add_article_sheet.dart';
@@ -45,13 +47,8 @@ final class _LibraryPageState extends ConsumerState<LibraryPage> {
       child: EditArticleMetadataSheet(article: article),
     );
     if (saved == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Article details updated.'),
-          duration: Duration(seconds: 4),
-          dismissDirection: DismissDirection.horizontal,
-        ),
-      );
+      ref.invalidate(articleByIdProvider(id));
+      showAutoDismissSnackBar(context, message: 'Article details updated.');
     }
   }
 
@@ -100,15 +97,7 @@ final class _LibraryPageState extends ConsumerState<LibraryPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Article marked as unread.'),
-          duration: Duration(seconds: 4),
-          dismissDirection: DismissDirection.horizontal,
-        ),
-      );
+    showAutoDismissSnackBar(context, message: 'Article marked as unread.');
   }
 
   Future<void> _markArticleRead(ArticleListItem article) async {
@@ -118,15 +107,7 @@ final class _LibraryPageState extends ConsumerState<LibraryPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Article marked as read.'),
-          duration: Duration(seconds: 4),
-          dismissDirection: DismissDirection.horizontal,
-        ),
-      );
+    showAutoDismissSnackBar(context, message: 'Article marked as read.');
   }
 
   void _showUndoSnackBar({
@@ -134,21 +115,16 @@ final class _LibraryPageState extends ConsumerState<LibraryPage> {
     required String actionLabel,
     required FutureOr<void> Function() onUndo,
   }) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 4),
-          dismissDirection: DismissDirection.horizontal,
-          action: SnackBarAction(
-            label: actionLabel,
-            onPressed: () {
-              unawaited(Future<void>.sync(onUndo));
-            },
-          ),
-        ),
-      );
+    showAutoDismissSnackBar(
+      context,
+      message: message,
+      action: SnackBarAction(
+        label: actionLabel,
+        onPressed: () {
+          unawaited(Future<void>.sync(onUndo));
+        },
+      ),
+    );
   }
 
   @override
@@ -219,6 +195,8 @@ final class _LibraryPageState extends ConsumerState<LibraryPage> {
                               key: ValueKey('data-${_view.name}'),
                               articles: items,
                               view: _view,
+                              bottomSpacerHeight:
+                                  MediaQuery.paddingOf(context).bottom + 124,
                               onTap: (article) =>
                                   context.push('/article/${article.id}'),
                               onEdit: (article) => _editArticle(article.id),
@@ -257,6 +235,7 @@ final class _AnimatedArticleList extends StatefulWidget {
   const _AnimatedArticleList({
     required this.articles,
     required this.view,
+    required this.bottomSpacerHeight,
     required this.onTap,
     required this.onEdit,
     required this.onMarkRead,
@@ -269,6 +248,7 @@ final class _AnimatedArticleList extends StatefulWidget {
 
   final List<ArticleListItem> articles;
   final LibraryView view;
+  final double bottomSpacerHeight;
   final void Function(ArticleListItem article) onTap;
   final void Function(ArticleListItem article) onEdit;
   final Future<void> Function(ArticleListItem article) onMarkRead;
@@ -386,6 +366,7 @@ final class _AnimatedArticleListState extends State<_AnimatedArticleList> {
       child: AnimatedList.separated(
         key: _listKey,
         initialItemCount: _items.length,
+        padding: EdgeInsets.only(bottom: widget.bottomSpacerHeight),
         physics: const AlwaysScrollableScrollPhysics(),
         separatorBuilder: (context, index, animation) =>
             const Divider(height: 1),
@@ -509,24 +490,30 @@ final class _LibraryBottomBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Material(
-            color: scheme.primaryContainer,
-            elevation: 8,
-            shadowColor: Colors.black.withValues(alpha: 0.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(addButtonRadius),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(addButtonRadius),
-              onTap: onAddArticle,
-              child: SizedBox(
-                width: 88,
-                height: 88,
-                child: Icon(
-                  Icons.add,
-                  size: 34,
-                  color: scheme.onPrimaryContainer,
+          _PressScale(
+            pressedScale: 1.07,
+            child: Material(
+              color: scheme.primaryContainer,
+              elevation: 8,
+              shadowColor: Colors.black.withValues(alpha: 0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(addButtonRadius),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(addButtonRadius),
+                onTap: () {
+                  Haptics.light();
+                  onAddArticle();
+                },
+                child: SizedBox(
+                  width: 88,
+                  height: 88,
+                  child: Icon(
+                    Icons.add,
+                    size: 34,
+                    color: scheme.onPrimaryContainer,
+                  ),
                 ),
               ),
             ),
@@ -537,7 +524,7 @@ final class _LibraryBottomBar extends StatelessWidget {
   }
 }
 
-final class _LibraryNavigationButton extends StatelessWidget {
+final class _LibraryNavigationButton extends StatefulWidget {
   const _LibraryNavigationButton({
     required this.selected,
     required this.borderRadius,
@@ -555,36 +542,138 @@ final class _LibraryNavigationButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
+  State<_LibraryNavigationButton> createState() =>
+      _LibraryNavigationButtonState();
+}
+
+final class _LibraryNavigationButtonState
+    extends State<_LibraryNavigationButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pressController = AnimationController(
+    duration: const Duration(milliseconds: 240),
+    vsync: this,
+  );
+  late final Animation<double> _pressProgress = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 0,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 42,
+    ),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: 0,
+      ).chain(CurveTween(curve: Curves.easeInOutCubic)),
+      weight: 58,
+    ),
+  ]).animate(_pressController);
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  void _playPressAnimation() {
+    Haptics.selection();
+    _pressController
+      ..stop()
+      ..forward(from: 0);
+    widget.onPressed();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Tooltip(
-      message: tooltip,
+      message: widget.tooltip,
       child: Semantics(
         button: true,
-        selected: selected,
-        label: tooltip,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
+        selected: widget.selected,
+        label: widget.tooltip,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _playPressAnimation,
+          child: SizedBox(
             width: 72,
             height: 56,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: selected ? scheme.secondaryContainer : Colors.transparent,
-              borderRadius: BorderRadius.circular(borderRadius),
-            ),
-            child: Icon(
-              selected ? selectedIcon : icon,
-              size: 28,
-              color: selected
-                  ? scheme.onSecondaryContainer
-                  : scheme.onSurfaceVariant,
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _pressProgress,
+                builder: (context, child) {
+                  final progress = _pressProgress.value;
+                  return Container(
+                    width: 68 + (4 * progress),
+                    height: 52 + (4 * progress),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: widget.selected
+                          ? Color.lerp(
+                              scheme.secondaryContainer,
+                              scheme.onSecondaryContainer,
+                              0.08 * progress,
+                            )
+                          : Color.lerp(
+                              Colors.transparent,
+                              scheme.onSurface.withValues(alpha: 0.12),
+                              progress,
+                            ),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Transform.scale(
+                      scale: 1 - (0.06 * progress),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Icon(
+                  widget.selected ? widget.selectedIcon : widget.icon,
+                  size: 28,
+                  color: widget.selected
+                      ? scheme.onSecondaryContainer
+                      : scheme.onSurfaceVariant,
+                ),
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+final class _PressScale extends StatefulWidget {
+  const _PressScale({required this.child, required this.pressedScale});
+
+  final Widget child;
+  final double pressedScale;
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+final class _PressScaleState extends State<_PressScale> {
+  var _pressed = false;
+
+  void _setPressed(bool pressed) {
+    if (mounted && _pressed != pressed) {
+      setState(() => _pressed = pressed);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) => _setPressed(true),
+      onPointerUp: (_) => _setPressed(false),
+      onPointerCancel: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: _pressed ? widget.pressedScale : 1,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutBack,
+        child: widget.child,
       ),
     );
   }
@@ -641,6 +730,7 @@ final class _DismissibleArticleListItemState
   double _offset = 0;
   double _width = 1;
   bool _busy = false;
+  bool _swipeHapticTriggered = false;
   var _animationGeneration = 0;
 
   double get _animatedOffset => _offsetAnimation?.value ?? _offset;
@@ -694,6 +784,17 @@ final class _DismissibleArticleListItemState
     _animationGeneration++;
     _controller.stop();
     final next = _animatedOffset + details.delta.dx;
+    final threshold = _width * 0.4;
+    if (!_swipeHapticTriggered &&
+        next.abs() >= threshold &&
+        _animatedOffset.abs() < threshold) {
+      _swipeHapticTriggered = true;
+      if (next > 0) {
+        Haptics.light();
+      } else {
+        Haptics.medium();
+      }
+    }
     setState(() {
       _offset = next.clamp(-_width * 1.04, _width * 1.04).toDouble();
       _offsetAnimation = null;
@@ -712,6 +813,7 @@ final class _DismissibleArticleListItemState
     final shouldDismiss = current.abs() >= _width * 0.4 || velocityDismisses;
 
     if (!shouldDismiss) {
+      _swipeHapticTriggered = false;
       await _animateTo(0, curve: AppMotion.swipeReturn);
       return;
     }
@@ -722,6 +824,14 @@ final class _DismissibleArticleListItemState
     // Capture the laid-out height before _animateTo calls setState. Reading
     // context.size after that state change can fail because layout is dirty.
     final removalHeight = context.size?.height ?? 104;
+    if (!_swipeHapticTriggered) {
+      _swipeHapticTriggered = true;
+      if (effect == _RemovalEffect.archive) {
+        Haptics.light();
+      } else {
+        Haptics.medium();
+      }
+    }
     _busy = true;
     final slideCompleted = await _animateTo(
       current.sign * _width * 1.04,
@@ -749,6 +859,7 @@ final class _DismissibleArticleListItemState
     }
     if (!confirmed) {
       widget.onDismissCancelled();
+      _swipeHapticTriggered = false;
       _busy = false;
       await _animateTo(0, curve: AppMotion.swipeReturn);
     } else {
@@ -760,6 +871,7 @@ final class _DismissibleArticleListItemState
 
   void _handleDragCancel() {
     if (!_busy) {
+      _swipeHapticTriggered = false;
       unawaited(_animateTo(0, curve: AppMotion.swipeReturn));
     }
   }
@@ -974,7 +1086,10 @@ final class _ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: onRetry,
+              onPressed: () {
+                Haptics.light();
+                onRetry();
+              },
               icon: const Icon(Icons.refresh),
               label: const Text('Try again'),
             ),

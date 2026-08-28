@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers.dart';
+import '../../../../app/haptics.dart';
 import '../../domain/article.dart';
 
 final class EditArticleMetadataSheet extends ConsumerStatefulWidget {
@@ -49,6 +50,7 @@ final class _EditArticleMetadataSheetState
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+    Haptics.medium();
     setState(() => _saving = true);
     final result = await ref
         .read(updateArticleMetadataUseCaseProvider)

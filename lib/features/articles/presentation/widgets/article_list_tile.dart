@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:read_it_later/features/articles/domain/article_list_item.dart';
 
 import '../../../../app/motion.dart';
+import '../../../../app/haptics.dart';
 
 final class ArticleListTile extends StatelessWidget {
   const ArticleListTile({
@@ -37,7 +38,10 @@ final class ArticleListTile extends StatelessWidget {
     final excerpt = article.excerpt?.trim();
 
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        Haptics.light();
+        onTap();
+      },
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
         child: Row(
@@ -94,6 +98,7 @@ final class ArticleListTile extends StatelessWidget {
               tooltip: 'Article actions',
               popUpAnimationStyle: AppMotion.popupMenu,
               onSelected: (action) {
+                Haptics.selection();
                 switch (action) {
                   case _ArticleAction.edit:
                     onEdit();
@@ -167,7 +172,7 @@ final class _EventLine extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.labelMedium?.copyWith(
-        fontSize: 10,
+        fontSize: 12,
         color: theme.colorScheme.primary.withValues(alpha: opacity),
         fontWeight: FontWeight.w800,
         letterSpacing: 0,
@@ -196,7 +201,7 @@ final class _SourceAndAuthorLine extends StatelessWidget {
         : 1.0;
     final style = theme.textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w700,
-      fontSize: 12,
+      fontSize: 11,
     );
 
     return Text.rich(

@@ -10,6 +10,8 @@ import 'package:read_it_later/app/providers.dart';
 import 'package:read_it_later/app/responsive.dart';
 import 'package:read_it_later/app/responsive_navigation.dart';
 import 'package:read_it_later/app/motion.dart';
+import 'package:read_it_later/app/snackbar.dart';
+import 'package:read_it_later/app/haptics.dart';
 import 'package:read_it_later/features/articles/domain/article.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -109,13 +111,7 @@ final class _ReaderContentState extends ConsumerState<_ReaderContent> {
     );
     if (saved == true && context.mounted) {
       ref.invalidate(articleByIdProvider(article.id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Article details updated.'),
-          duration: Duration(seconds: 4),
-          dismissDirection: DismissDirection.horizontal,
-        ),
-      );
+      showAutoDismissSnackBar(context, message: 'Article details updated.');
     }
   }
 
@@ -137,35 +133,25 @@ final class _ReaderContentState extends ConsumerState<_ReaderContent> {
     }
 
     context.go('/');
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: const Text('Article deleted.'),
-          duration: const Duration(seconds: 4),
-          dismissDirection: DismissDirection.horizontal,
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () => deleteUseCase.undo(deleted),
-          ),
-        ),
-      );
+    showAutoDismissSnackBar(
+      context,
+      message: 'Article deleted.',
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () => deleteUseCase.undo(deleted),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final detailSpec = context.layoutType(ResponsivePageType.detail);
-    final metadata = [
-      if (article.siteName?.trim().isNotEmpty == true) article.siteName!,
-      if (article.author?.trim().isNotEmpty == true) article.author!,
-      if (article.publishedAt != null)
-        DateFormat('MMM d, yyyy').format(article.publishedAt!),
-      if (article.isRead) 'Read',
-      article.isLinkOnly
-          ? 'Saved link'
-          : '${article.estimatedReadingMinutes} min read',
-    ].join('  •  ');
+    final source = article.siteName?.trim().isNotEmpty == true
+        ? article.siteName!.trim()
+        : Uri.tryParse(article.sourceUrl)?.host ?? 'Saved webpage';
+    final author = article.author?.trim();
+    final language = article.language?.trim();
 
     return Scaffold(
       appBar: AppBar(
@@ -176,10 +162,13 @@ final class _ReaderContentState extends ConsumerState<_ReaderContent> {
         ),
         actions: [
           IconButton(
-            onPressed: () => launchUrl(
-              Uri.parse(article.resolvedUrl),
-              mode: LaunchMode.externalApplication,
-            ),
+            onPressed: () {
+              Haptics.light();
+              launchUrl(
+                Uri.parse(article.resolvedUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            },
             tooltip: 'Open original',
             icon: const Icon(Icons.open_in_new),
           ),
@@ -187,6 +176,7 @@ final class _ReaderContentState extends ConsumerState<_ReaderContent> {
             tooltip: 'Article actions',
             popUpAnimationStyle: AppMotion.popupMenu,
             onSelected: (action) {
+              Haptics.selection();
               switch (action) {
                 case _ReaderAction.edit:
                   _editArticle(context);
@@ -245,21 +235,25 @@ final class _ReaderContentState extends ConsumerState<_ReaderContent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _ReaderEventLine(
+                  savedAt: article.savedAt,
+                  readingTime: article.isLinkOnly
+                      ? 'Link'
+                      : '${article.estimatedReadingMinutes} min',
+                ),
+                const SizedBox(height: 8),
                 Text(
                   article.title,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                if (metadata.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    metadata,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+                const SizedBox(height: 8),
+                _ReaderSourceLine(
+                  source: source,
+                  author: author,
+                  language: language,
+                ),
                 const SizedBox(height: 28),
                 if (article.isLinkOnly)
                   _LinkOnlyArticle(article: article)
@@ -312,6 +306,97 @@ final class _ReaderContentState extends ConsumerState<_ReaderContent> {
 
 enum _ReaderAction { edit, toggleRead, delete }
 
+final class _ReaderEventLine extends StatelessWidget {
+  const _ReaderEventLine({required this.savedAt, required this.readingTime});
+
+  final DateTime savedAt;
+  final String readingTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final style = theme.textTheme.labelMedium?.copyWith(
+      fontSize: 12,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0,
+    );
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: DateFormat('MMM d, yyyy').format(savedAt),
+            style: style?.copyWith(color: scheme.primary),
+          ),
+          TextSpan(
+            text: '  •  ',
+            style: style?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          TextSpan(
+            text: readingTime,
+            style: style?.copyWith(color: scheme.secondary),
+          ),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+final class _ReaderSourceLine extends StatelessWidget {
+  const _ReaderSourceLine({
+    required this.source,
+    required this.author,
+    required this.language,
+  });
+
+  final String source;
+  final String? author;
+  final String? language;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final style = Theme.of(context).textTheme.bodySmall
+        ?.copyWith(fontSize: 11, fontWeight: FontWeight.w700);
+    final spans = <TextSpan>[
+      TextSpan(
+        text: source,
+        style: style?.copyWith(color: scheme.tertiary),
+      ),
+    ];
+    void addValue(String value, Color color) {
+      spans
+        ..add(
+          TextSpan(
+            text: '  •  ',
+            style: style?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        )
+        ..add(
+          TextSpan(
+            text: value,
+            style: style?.copyWith(color: color),
+          ),
+        );
+    }
+
+    if (author != null && author!.isNotEmpty) {
+      addValue(author!, scheme.secondary);
+    }
+    if (language != null && language!.isNotEmpty) {
+      addValue(language!, scheme.onSurfaceVariant);
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
 final class _LinkOnlyArticle extends StatelessWidget {
   const _LinkOnlyArticle({required this.article});
 
@@ -351,10 +436,13 @@ final class _LinkOnlyArticle extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: () => launchUrl(
-                Uri.parse(article.resolvedUrl),
-                mode: LaunchMode.externalApplication,
-              ),
+              onPressed: () {
+                Haptics.light();
+                launchUrl(
+                  Uri.parse(article.resolvedUrl),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
               icon: const Icon(Icons.open_in_browser),
               label: const Text('Open in browser'),
             ),
@@ -554,7 +642,10 @@ final class _NotFoundPage extends StatelessWidget {
               const Text('Article not found.'),
               const SizedBox(height: 16),
               FilledButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  Haptics.light();
+                  Navigator.of(context).pop();
+                },
                 icon: const Icon(Icons.arrow_back),
                 label: const Text('Go back'),
               ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/haptics.dart';
+
 final class LibraryEmptyState extends StatelessWidget {
   const LibraryEmptyState({
     required this.title,
@@ -45,7 +47,10 @@ final class LibraryEmptyState extends StatelessWidget {
             if (actionLabel != null && onAddArticle != null) ...[
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: onAddArticle,
+                onPressed: () {
+                  Haptics.light();
+                  onAddArticle!();
+                },
                 icon: const Icon(Icons.add),
                 label: Text(actionLabel!),
               ),

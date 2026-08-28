@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'haptics.dart';
 import 'responsive.dart';
 
 enum AdaptiveModalContentLayout { wrapContent, fillHeight }
@@ -84,7 +85,10 @@ final class _AdaptiveModalFrame extends StatelessWidget {
                   const Spacer(),
                 if (showCloseButton)
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      Haptics.light();
+                      Navigator.of(context).pop();
+                    },
                     tooltip: 'Close',
                     icon: const Icon(Icons.close),
                   ),
