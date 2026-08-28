@@ -33,6 +33,13 @@ migrate_working_dir/
 /build/
 /.gradle-release-cache/
 /android/gradle/gradle-daemon-jvm.properties
+/DEVELOPMENT_PLAN.md
+/UI_MIGRATION_EXECUTION_PLAN.md
+/TEXT_RENDERING_REFACTOR_PLAN.md
+/release/
+/example/*
+!/example/overview_light.jpg
+!/example/overview_dark.jpg
 /coverage/
 **/.gradle/
 **/local.properties
