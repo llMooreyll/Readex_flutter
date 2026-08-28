@@ -118,6 +118,26 @@ class $ArticlesTable extends Articles
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _readAtMeta = const VerificationMeta('readAt');
+  @override
+  late final GeneratedColumn<DateTime> readAt = GeneratedColumn<DateTime>(
+    'read_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _archivedAtMeta = const VerificationMeta(
+    'archivedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+    'archived_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _contentHtmlMeta = const VerificationMeta(
     'contentHtml',
   );
@@ -196,6 +216,8 @@ class $ArticlesTable extends Articles
     siteName,
     language,
     publishedAt,
+    readAt,
+    archivedAt,
     contentHtml,
     contentText,
     estimatedReadingMinutes,
@@ -285,6 +307,18 @@ class $ArticlesTable extends Articles
           data['published_at']!,
           _publishedAtMeta,
         ),
+      );
+    }
+    if (data.containsKey('read_at')) {
+      context.handle(
+        _readAtMeta,
+        readAt.isAcceptableOrUnknown(data['read_at']!, _readAtMeta),
+      );
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+        _archivedAtMeta,
+        archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
       );
     }
     if (data.containsKey('content_html')) {
@@ -396,6 +430,14 @@ class $ArticlesTable extends Articles
         DriftSqlType.dateTime,
         data['${effectivePrefix}published_at'],
       ),
+      readAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}read_at'],
+      ),
+      archivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}archived_at'],
+      ),
       contentHtml: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}content_html'],
@@ -440,6 +482,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
   final String? siteName;
   final String? language;
   final DateTime? publishedAt;
+  final DateTime? readAt;
+  final DateTime? archivedAt;
   final String contentHtml;
   final String contentText;
   final int estimatedReadingMinutes;
@@ -457,6 +501,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
     this.siteName,
     this.language,
     this.publishedAt,
+    this.readAt,
+    this.archivedAt,
     required this.contentHtml,
     required this.contentText,
     required this.estimatedReadingMinutes,
@@ -488,6 +534,12 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
     }
     if (!nullToAbsent || publishedAt != null) {
       map['published_at'] = Variable<DateTime>(publishedAt);
+    }
+    if (!nullToAbsent || readAt != null) {
+      map['read_at'] = Variable<DateTime>(readAt);
+    }
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
     }
     map['content_html'] = Variable<String>(contentHtml);
     map['content_text'] = Variable<String>(contentText);
@@ -522,6 +574,12 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
       publishedAt: publishedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(publishedAt),
+      readAt: readAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readAt),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
       contentHtml: Value(contentHtml),
       contentText: Value(contentText),
       estimatedReadingMinutes: Value(estimatedReadingMinutes),
@@ -547,6 +605,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
       siteName: serializer.fromJson<String?>(json['siteName']),
       language: serializer.fromJson<String?>(json['language']),
       publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
+      readAt: serializer.fromJson<DateTime?>(json['readAt']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
       contentHtml: serializer.fromJson<String>(json['contentHtml']),
       contentText: serializer.fromJson<String>(json['contentText']),
       estimatedReadingMinutes: serializer.fromJson<int>(
@@ -571,6 +631,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
       'siteName': serializer.toJson<String?>(siteName),
       'language': serializer.toJson<String?>(language),
       'publishedAt': serializer.toJson<DateTime?>(publishedAt),
+      'readAt': serializer.toJson<DateTime?>(readAt),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
       'contentHtml': serializer.toJson<String>(contentHtml),
       'contentText': serializer.toJson<String>(contentText),
       'estimatedReadingMinutes': serializer.toJson<int>(
@@ -593,6 +655,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
     Value<String?> siteName = const Value.absent(),
     Value<String?> language = const Value.absent(),
     Value<DateTime?> publishedAt = const Value.absent(),
+    Value<DateTime?> readAt = const Value.absent(),
+    Value<DateTime?> archivedAt = const Value.absent(),
     String? contentHtml,
     String? contentText,
     int? estimatedReadingMinutes,
@@ -610,6 +674,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
     siteName: siteName.present ? siteName.value : this.siteName,
     language: language.present ? language.value : this.language,
     publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
+    readAt: readAt.present ? readAt.value : this.readAt,
+    archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
     contentHtml: contentHtml ?? this.contentHtml,
     contentText: contentText ?? this.contentText,
     estimatedReadingMinutes:
@@ -636,6 +702,10 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
       publishedAt: data.publishedAt.present
           ? data.publishedAt.value
           : this.publishedAt,
+      readAt: data.readAt.present ? data.readAt.value : this.readAt,
+      archivedAt: data.archivedAt.present
+          ? data.archivedAt.value
+          : this.archivedAt,
       contentHtml: data.contentHtml.present
           ? data.contentHtml.value
           : this.contentHtml,
@@ -666,6 +736,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
           ..write('siteName: $siteName, ')
           ..write('language: $language, ')
           ..write('publishedAt: $publishedAt, ')
+          ..write('readAt: $readAt, ')
+          ..write('archivedAt: $archivedAt, ')
           ..write('contentHtml: $contentHtml, ')
           ..write('contentText: $contentText, ')
           ..write('estimatedReadingMinutes: $estimatedReadingMinutes, ')
@@ -688,6 +760,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
     siteName,
     language,
     publishedAt,
+    readAt,
+    archivedAt,
     contentHtml,
     contentText,
     estimatedReadingMinutes,
@@ -709,6 +783,8 @@ class ArticleRow extends DataClass implements Insertable<ArticleRow> {
           other.siteName == this.siteName &&
           other.language == this.language &&
           other.publishedAt == this.publishedAt &&
+          other.readAt == this.readAt &&
+          other.archivedAt == this.archivedAt &&
           other.contentHtml == this.contentHtml &&
           other.contentText == this.contentText &&
           other.estimatedReadingMinutes == this.estimatedReadingMinutes &&
@@ -728,6 +804,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
   final Value<String?> siteName;
   final Value<String?> language;
   final Value<DateTime?> publishedAt;
+  final Value<DateTime?> readAt;
+  final Value<DateTime?> archivedAt;
   final Value<String> contentHtml;
   final Value<String> contentText;
   final Value<int> estimatedReadingMinutes;
@@ -745,6 +823,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
     this.siteName = const Value.absent(),
     this.language = const Value.absent(),
     this.publishedAt = const Value.absent(),
+    this.readAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
     this.contentHtml = const Value.absent(),
     this.contentText = const Value.absent(),
     this.estimatedReadingMinutes = const Value.absent(),
@@ -763,6 +843,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
     this.siteName = const Value.absent(),
     this.language = const Value.absent(),
     this.publishedAt = const Value.absent(),
+    this.readAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
     required String contentHtml,
     required String contentText,
     required int estimatedReadingMinutes,
@@ -789,6 +871,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
     Expression<String>? siteName,
     Expression<String>? language,
     Expression<DateTime>? publishedAt,
+    Expression<DateTime>? readAt,
+    Expression<DateTime>? archivedAt,
     Expression<String>? contentHtml,
     Expression<String>? contentText,
     Expression<int>? estimatedReadingMinutes,
@@ -807,6 +891,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
       if (siteName != null) 'site_name': siteName,
       if (language != null) 'language': language,
       if (publishedAt != null) 'published_at': publishedAt,
+      if (readAt != null) 'read_at': readAt,
+      if (archivedAt != null) 'archived_at': archivedAt,
       if (contentHtml != null) 'content_html': contentHtml,
       if (contentText != null) 'content_text': contentText,
       if (estimatedReadingMinutes != null)
@@ -828,6 +914,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
     Value<String?>? siteName,
     Value<String?>? language,
     Value<DateTime?>? publishedAt,
+    Value<DateTime?>? readAt,
+    Value<DateTime?>? archivedAt,
     Value<String>? contentHtml,
     Value<String>? contentText,
     Value<int>? estimatedReadingMinutes,
@@ -846,6 +934,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
       siteName: siteName ?? this.siteName,
       language: language ?? this.language,
       publishedAt: publishedAt ?? this.publishedAt,
+      readAt: readAt ?? this.readAt,
+      archivedAt: archivedAt ?? this.archivedAt,
       contentHtml: contentHtml ?? this.contentHtml,
       contentText: contentText ?? this.contentText,
       estimatedReadingMinutes:
@@ -889,6 +979,12 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
     if (publishedAt.present) {
       map['published_at'] = Variable<DateTime>(publishedAt.value);
     }
+    if (readAt.present) {
+      map['read_at'] = Variable<DateTime>(readAt.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
     if (contentHtml.present) {
       map['content_html'] = Variable<String>(contentHtml.value);
     }
@@ -925,6 +1021,8 @@ class ArticlesCompanion extends UpdateCompanion<ArticleRow> {
           ..write('siteName: $siteName, ')
           ..write('language: $language, ')
           ..write('publishedAt: $publishedAt, ')
+          ..write('readAt: $readAt, ')
+          ..write('archivedAt: $archivedAt, ')
           ..write('contentHtml: $contentHtml, ')
           ..write('contentText: $contentText, ')
           ..write('estimatedReadingMinutes: $estimatedReadingMinutes, ')
@@ -959,6 +1057,8 @@ typedef $$ArticlesTableCreateCompanionBuilder = ArticlesCompanion Function({
   Value<String?> siteName,
   Value<String?> language,
   Value<DateTime?> publishedAt,
+  Value<DateTime?> readAt,
+  Value<DateTime?> archivedAt,
   required String contentHtml,
   required String contentText,
   required int estimatedReadingMinutes,
@@ -977,6 +1077,8 @@ typedef $$ArticlesTableUpdateCompanionBuilder = ArticlesCompanion Function({
   Value<String?> siteName,
   Value<String?> language,
   Value<DateTime?> publishedAt,
+  Value<DateTime?> readAt,
+  Value<DateTime?> archivedAt,
   Value<String> contentHtml,
   Value<String> contentText,
   Value<int> estimatedReadingMinutes,
@@ -1041,6 +1143,16 @@ class $$ArticlesTableFilterComposer
 
   ColumnFilters<DateTime> get publishedAt => $composableBuilder(
     column: $table.publishedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get readAt => $composableBuilder(
+    column: $table.readAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1134,6 +1246,16 @@ class $$ArticlesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get readAt => $composableBuilder(
+    column: $table.readAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get contentHtml => $composableBuilder(
     column: $table.contentHtml,
     builder: (column) => ColumnOrderings(column),
@@ -1210,6 +1332,14 @@ class $$ArticlesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<DateTime> get readAt =>
+      $composableBuilder(column: $table.readAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get contentHtml => $composableBuilder(
     column: $table.contentHtml,
     builder: (column) => column,
@@ -1278,6 +1408,8 @@ class $$ArticlesTableTableManager
                 Value<String?> siteName = const Value.absent(),
                 Value<String?> language = const Value.absent(),
                 Value<DateTime?> publishedAt = const Value.absent(),
+                Value<DateTime?> readAt = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
                 Value<String> contentHtml = const Value.absent(),
                 Value<String> contentText = const Value.absent(),
                 Value<int> estimatedReadingMinutes = const Value.absent(),
@@ -1295,6 +1427,8 @@ class $$ArticlesTableTableManager
                 siteName: siteName,
                 language: language,
                 publishedAt: publishedAt,
+                readAt: readAt,
+                archivedAt: archivedAt,
                 contentHtml: contentHtml,
                 contentText: contentText,
                 estimatedReadingMinutes: estimatedReadingMinutes,
@@ -1314,6 +1448,8 @@ class $$ArticlesTableTableManager
                 Value<String?> siteName = const Value.absent(),
                 Value<String?> language = const Value.absent(),
                 Value<DateTime?> publishedAt = const Value.absent(),
+                Value<DateTime?> readAt = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
                 required String contentHtml,
                 required String contentText,
                 required int estimatedReadingMinutes,
@@ -1331,6 +1467,8 @@ class $$ArticlesTableTableManager
                 siteName: siteName,
                 language: language,
                 publishedAt: publishedAt,
+                readAt: readAt,
+                archivedAt: archivedAt,
                 contentHtml: contentHtml,
                 contentText: contentText,
                 estimatedReadingMinutes: estimatedReadingMinutes,

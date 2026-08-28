@@ -108,5 +108,33 @@ final class FakeArticleRepository implements ArticleRepository {
   Stream<List<ArticleListItem>> watchAll() => Stream.value(const []);
 
   @override
+  Stream<List<ArticleListItem>> watchArchived() => Stream.value(const []);
+
+  @override
+  Future<int> restore(Article article) async => article.id;
+
+  @override
+  Future<void> updateMetadata({
+    required int id,
+    required String title,
+    required String? excerpt,
+    required String? author,
+    required String? siteName,
+    required String? language,
+  }) async {}
+
+  @override
+  Future<void> markAsRead(int id) async {}
+
+  @override
+  Future<void> markAsUnread(int id) async {}
+
+  @override
+  Future<void> archiveById(int id) async {}
+
+  @override
+  Future<void> unarchiveById(int id) async {}
+
+  @override
   Future<void> deleteById(int id) async {}
 }

@@ -21,6 +21,7 @@ void main() {
       extractorVersion: linkOnly ? 'link-only/1.0' : 'reader_mode/0.2.2',
       savedAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
+      readAt: DateTime.utc(2026),
     );
   }
 
@@ -67,7 +68,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Saved link'), findsOneWidget);
+    expect(find.text('Saved link'), findsAtLeastNWidgets(1));
     expect(find.text('Open in browser'), findsOneWidget);
   });
 }

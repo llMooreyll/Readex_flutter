@@ -20,7 +20,7 @@ final class SaveArticleUseCase {
   final ArticleRepository repository;
   final ArticleImporter importer;
 
-  Future<Result<int>> execute(
+  Future<Result<ArticleDraft>> prepare(
     String rawUrl, {
     void Function(SaveArticleStage stage)? onStage,
   }) async {
@@ -45,10 +45,29 @@ final class SaveArticleUseCase {
         return Failure(imported.failure);
       }
 
-      onStage?.call(SaveArticleStage.saving);
-      final id = await repository.insert(
-        (imported as Success<ArticleDraft>).value,
-      );
+      return Success((imported as Success<ArticleDraft>).value);
+    } on AppFailure catch (failure) {
+      return Failure(failure);
+    } catch (error) {
+      return Failure(UnexpectedFailure(technicalMessage: error.toString()));
+    }
+  }
+
+  Future<Result<int>> execute(
+    String rawUrl, {
+    void Function(SaveArticleStage stage)? onStage,
+  }) async {
+    final prepared = await prepare(rawUrl, onStage: onStage);
+    if (prepared is Failure<ArticleDraft>) {
+      return Failure(prepared.failure);
+    }
+    onStage?.call(SaveArticleStage.saving);
+    return saveDraft((prepared as Success<ArticleDraft>).value);
+  }
+
+  Future<Result<int>> saveDraft(ArticleDraft draft) async {
+    try {
+      final id = await repository.insert(draft);
       return Success(id);
     } on AppFailure catch (failure) {
       return Failure(failure);

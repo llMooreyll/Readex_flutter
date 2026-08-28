@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers.dart';
+import '../../../../app/responsive_navigation.dart';
+import 'article_preview_sheet.dart';
 
 final class AddArticleSheet extends ConsumerStatefulWidget {
   const AddArticleSheet({super.key});
@@ -38,11 +40,17 @@ final class _AddArticleSheetState extends ConsumerState<AddArticleSheet> {
       return;
     }
     FocusScope.of(context).unfocus();
-    final id = await ref
+    final draft = await ref
         .read(saveArticleControllerProvider.notifier)
-        .save(_urlController.text);
-    if (id != null && mounted) {
-      Navigator.of(context).pop(id);
+        .prepare(_urlController.text);
+    if (draft != null && mounted) {
+      final saved = await ResponsiveNavigation.showAdaptiveModalPage<bool>(
+        context: context,
+        child: ArticlePreviewSheet(draft: draft),
+      );
+      if (saved == true && mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -113,9 +121,9 @@ final class _AddArticleSheetState extends ConsumerState<AddArticleSheet> {
                       child: Row(
                         children: [
                           const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 3),
                           ),
                           const SizedBox(width: 12),
                           Expanded(child: Text(state.progressLabel)),

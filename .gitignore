@@ -31,6 +31,8 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+/.gradle-release-cache/
+/android/gradle/gradle-daemon-jvm.properties
 /coverage/
 **/.gradle/
 **/local.properties

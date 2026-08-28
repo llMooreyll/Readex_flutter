@@ -23,6 +23,10 @@ final class DuplicateArticleFailure extends AppFailure {
   const DuplicateArticleFailure() : super('This article is already saved.');
 }
 
+final class EmptyTitleFailure extends AppFailure {
+  const EmptyTitleFailure() : super('Enter a title.');
+}
+
 final class NetworkUnavailableFailure extends AppFailure {
   const NetworkUnavailableFailure({super.technicalMessage})
     : super('The network is unavailable. Check your connection and try again.');

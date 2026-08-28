@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:read_it_later/features/articles/application/archive_article_use_case.dart';
 import 'package:read_it_later/features/articles/application/delete_article_use_case.dart';
+import 'package:read_it_later/features/articles/application/mark_article_read_use_case.dart';
 import 'package:read_it_later/features/articles/application/save_article_use_case.dart';
+import 'package:read_it_later/features/articles/application/update_article_metadata_use_case.dart';
 import 'package:read_it_later/features/articles/data/database/app_database.dart';
 import 'package:read_it_later/features/articles/data/import/article_html_sanitizer.dart';
 import 'package:read_it_later/features/articles/data/import/default_article_importer.dart';
@@ -47,6 +50,25 @@ final deleteArticleUseCaseProvider = Provider<DeleteArticleUseCase>((ref) {
   return DeleteArticleUseCase(repository: ref.watch(articleRepositoryProvider));
 });
 
+final archiveArticleUseCaseProvider = Provider<ArchiveArticleUseCase>((ref) {
+  return ArchiveArticleUseCase(
+    repository: ref.watch(articleRepositoryProvider),
+  );
+});
+
+final markArticleReadUseCaseProvider = Provider<MarkArticleReadUseCase>((ref) {
+  return MarkArticleReadUseCase(
+    repository: ref.watch(articleRepositoryProvider),
+  );
+});
+
+final updateArticleMetadataUseCaseProvider =
+    Provider<UpdateArticleMetadataUseCase>((ref) {
+      return UpdateArticleMetadataUseCase(
+        repository: ref.watch(articleRepositoryProvider),
+      );
+    });
+
 final saveArticleControllerProvider =
     StateNotifierProvider<SaveArticleController, SaveArticleState>((ref) {
       return SaveArticleController(ref.watch(saveArticleUseCaseProvider));
@@ -54,6 +76,12 @@ final saveArticleControllerProvider =
 
 final articleListProvider = StreamProvider<List<ArticleListItem>>((ref) {
   return ref.watch(articleRepositoryProvider).watchAll();
+});
+
+final archivedArticleListProvider = StreamProvider<List<ArticleListItem>>((
+  ref,
+) {
+  return ref.watch(articleRepositoryProvider).watchArchived();
 });
 
 final articleByIdProvider = FutureProvider.family<Article?, int>((ref, id) {

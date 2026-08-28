@@ -8,6 +8,8 @@ class ArticleListItem {
     required this.siteName,
     required this.estimatedReadingMinutes,
     required this.isLinkOnly,
+    required this.readAt,
+    required this.archivedAt,
     required this.savedAt,
   });
 
@@ -19,5 +21,11 @@ class ArticleListItem {
   final String? siteName;
   final int estimatedReadingMinutes;
   final bool isLinkOnly;
+  final DateTime? readAt;
+  final DateTime? archivedAt;
   final DateTime savedAt;
+
+  bool get isRead => readAt != null;
+
+  bool get isArchived => archivedAt != null;
 }

@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 
 final class LibraryEmptyState extends StatelessWidget {
-  const LibraryEmptyState({required this.onAddArticle, super.key});
+  const LibraryEmptyState({
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAddArticle,
+    super.key,
+  });
 
-  final VoidCallback onAddArticle;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAddArticle;
 
   @override
   Widget build(BuildContext context) {
@@ -21,24 +30,26 @@ final class LibraryEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Your library is empty',
+              title,
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Save an article to read it later, even when you are offline.',
+              message,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: onAddArticle,
-              icon: const Icon(Icons.add),
-              label: const Text('Add your first article'),
-            ),
+            if (actionLabel != null && onAddArticle != null) ...[
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: onAddArticle,
+                icon: const Icon(Icons.add),
+                label: Text(actionLabel!),
+              ),
+            ],
           ],
         ),
       ),

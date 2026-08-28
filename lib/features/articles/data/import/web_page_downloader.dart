@@ -40,7 +40,7 @@ final class WebPageDownloader {
         ..headers.addAll({
           'Accept': 'text/html,application/xhtml+xml',
           'Accept-Language': 'en-US,en;q=0.8',
-          'User-Agent': 'ReadItLater/1.0 (Flutter; Android) AppleWebKit/537.36',
+          'User-Agent': 'Readex/1.0 (Flutter; Android) AppleWebKit/537.36',
         });
 
       final response = await client.send(request).timeout(timeout);

@@ -27,6 +27,10 @@ class Articles extends Table {
 
   DateTimeColumn get publishedAt => dateTime().nullable()();
 
+  DateTimeColumn get readAt => dateTime().nullable()();
+
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+
   TextColumn get contentHtml => text()();
 
   TextColumn get contentText => text()();
@@ -46,7 +50,7 @@ final class AppDatabase extends _$AppDatabase {
     : super(implementation ?? driftDatabase(name: 'read_it_later'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,6 +59,15 @@ final class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX articles_saved_at_idx ON articles (saved_at DESC)',
       );
+    },
+    onUpgrade: (Migrator migrator, int from, int to) async {
+      if (from < 2) {
+        await migrator.addColumn(articles, articles.readAt);
+        await migrator.addColumn(articles, articles.archivedAt);
+        await customStatement(
+          'CREATE INDEX articles_archived_at_idx ON articles (archived_at)',
+        );
+      }
     },
   );
 }

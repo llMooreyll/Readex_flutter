@@ -1,0 +1,5 @@
+storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
+keyPassword=REPLACE_WITH_KEY_PASSWORD
+keyAlias=readex
+# Keep the keystore outside the project directory and use forward slashes.
+storeFile=D:/AndroidKeys/readex-upload-key.jks

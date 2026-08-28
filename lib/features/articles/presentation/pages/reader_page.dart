@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:go_router/go_router.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:intl/intl.dart';
-import 'package:read_it_later/app/responsive.dart';
 import 'package:read_it_later/app/providers.dart';
+import 'package:read_it_later/app/responsive.dart';
+import 'package:read_it_later/app/responsive_navigation.dart';
+import 'package:read_it_later/app/motion.dart';
 import 'package:read_it_later/features/articles/domain/article.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../widgets/edit_article_metadata_sheet.dart';
 
 final class ReaderPage extends ConsumerWidget {
   const ReaderPage({required this.id, super.key});
@@ -41,10 +47,52 @@ final class ReaderPage extends ConsumerWidget {
   }
 }
 
-final class _ReaderContent extends ConsumerWidget {
+final class _ReaderContent extends ConsumerStatefulWidget {
   const _ReaderContent({required this.article, super.key});
 
   final Article article;
+
+  @override
+  ConsumerState<_ReaderContent> createState() => _ReaderContentState();
+}
+
+final class _ReaderContentState extends ConsumerState<_ReaderContent> {
+  var _didAutoMarkRead = false;
+
+  Article get article => widget.article;
+
+  @override
+  void initState() {
+    super.initState();
+    _markAsReadIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ReaderContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.article.id != widget.article.id) {
+      _didAutoMarkRead = false;
+      _markAsReadIfNeeded();
+    }
+  }
+
+  void _markAsReadIfNeeded() {
+    if (_didAutoMarkRead || article.isRead) {
+      return;
+    }
+    _didAutoMarkRead = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(
+          ref.read(markArticleReadUseCaseProvider).markAsRead(article.id).then((
+            _,
+          ) {
+            ref.invalidate(articleByIdProvider(article.id));
+          }),
+        );
+      }
+    });
+  }
 
   Future<bool> _openUrl(String value) async {
     final uri = Uri.tryParse(value);
@@ -54,40 +102,58 @@ final class _ReaderContent extends ConsumerWidget {
     return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  Future<void> _deleteArticle(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _editArticle(BuildContext context) async {
+    final saved = await ResponsiveNavigation.showAdaptiveModalPage<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete article?'),
-        content: const Text(
-          'This saved article will be removed from your library.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      child: EditArticleMetadataSheet(article: article),
     );
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
-
-    await ref.read(deleteArticleUseCaseProvider).execute(article.id);
-    if (context.mounted) {
-      context.go('/');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Article deleted.')));
+    if (saved == true && context.mounted) {
+      ref.invalidate(articleByIdProvider(article.id));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Article details updated.'),
+          duration: Duration(seconds: 4),
+          dismissDirection: DismissDirection.horizontal,
+        ),
+      );
     }
   }
 
+  Future<void> _toggleRead(WidgetRef ref) async {
+    final useCase = ref.read(markArticleReadUseCaseProvider);
+    if (article.isRead) {
+      await useCase.markAsUnread(article.id);
+    } else {
+      await useCase.markAsRead(article.id);
+    }
+    ref.invalidate(articleByIdProvider(article.id));
+  }
+
+  Future<void> _deleteArticle(BuildContext context, WidgetRef ref) async {
+    final deleteUseCase = ref.read(deleteArticleUseCaseProvider);
+    final deleted = await deleteUseCase.execute(article.id);
+    if (deleted == null || !context.mounted) {
+      return;
+    }
+
+    context.go('/');
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('Article deleted.'),
+          duration: const Duration(seconds: 4),
+          dismissDirection: DismissDirection.horizontal,
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => deleteUseCase.undo(deleted),
+          ),
+        ),
+      );
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final detailSpec = context.layoutType(ResponsivePageType.detail);
     final metadata = [
@@ -95,7 +161,10 @@ final class _ReaderContent extends ConsumerWidget {
       if (article.author?.trim().isNotEmpty == true) article.author!,
       if (article.publishedAt != null)
         DateFormat('MMM d, yyyy').format(article.publishedAt!),
-      '${article.estimatedReadingMinutes} min read',
+      if (article.isRead) 'Read',
+      article.isLinkOnly
+          ? 'Saved link'
+          : '${article.estimatedReadingMinutes} min read',
     ].join('  •  ');
 
     return Scaffold(
@@ -116,14 +185,43 @@ final class _ReaderContent extends ConsumerWidget {
           ),
           PopupMenuButton<_ReaderAction>(
             tooltip: 'Article actions',
+            popUpAnimationStyle: AppMotion.popupMenu,
             onSelected: (action) {
               switch (action) {
+                case _ReaderAction.edit:
+                  _editArticle(context);
+                case _ReaderAction.toggleRead:
+                  _toggleRead(ref);
                 case _ReaderAction.delete:
                   _deleteArticle(context, ref);
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: _ReaderAction.edit,
+                child: ListTile(
+                  leading: Icon(Icons.edit_outlined),
+                  title: Text('Edit details'),
+                ),
+              ),
+              if (article.isRead)
+                const PopupMenuItem(
+                  value: _ReaderAction.toggleRead,
+                  child: ListTile(
+                    leading: Icon(Icons.mark_email_unread_outlined),
+                    title: Text('Mark as unread'),
+                  ),
+                ),
+              if (!article.isRead)
+                const PopupMenuItem(
+                  value: _ReaderAction.toggleRead,
+                  child: ListTile(
+                    leading: Icon(Icons.mark_email_read_outlined),
+                    title: Text('Mark as read'),
+                  ),
+                ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
                 value: _ReaderAction.delete,
                 child: ListTile(
                   leading: Icon(Icons.delete_outline),
@@ -184,20 +282,19 @@ final class _ReaderContent extends ConsumerWidget {
                       }
                     },
                     onErrorBuilder: (context, element, error) => Container(
-                      constraints: const BoxConstraints(minHeight: 80),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerLow,
-                        border: Border.all(
-                          color: theme.colorScheme.outlineVariant,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      child: element.localName == 'img'
+                          ? const _ArticleImagePlaceholder()
+                          : const SizedBox.shrink(),
                     ),
+                    onLoadingBuilder: (context, element, progress) =>
+                        element.localName == 'img'
+                        ? const _ArticleImageLoadingPlaceholder()
+                        : const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Center(
+                              child: CircularProgressIndicator(strokeWidth: 3),
+                            ),
+                          ),
                     onTapUrl: _openUrl,
                     renderMode: RenderMode.column,
                     textStyle: theme.textTheme.bodyLarge?.copyWith(
@@ -213,7 +310,7 @@ final class _ReaderContent extends ConsumerWidget {
   }
 }
 
-enum _ReaderAction { delete }
+enum _ReaderAction { edit, toggleRead, delete }
 
 final class _LinkOnlyArticle extends StatelessWidget {
   const _LinkOnlyArticle({required this.article});
@@ -284,8 +381,60 @@ final class _ArticleHtmlWidgetFactory extends WidgetFactory {
       headers: {
         'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*',
         'Referer': referrer,
-        'User-Agent': 'ReadItLater/1.0 (Flutter; Android) AppleWebKit/537.36',
+        'User-Agent': 'Readex/1.0 (Flutter; Android) AppleWebKit/537.36',
       },
+    );
+  }
+}
+
+final class _ArticleImageLoadingPlaceholder extends StatelessWidget {
+  const _ArticleImageLoadingPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 180),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: CircularProgressIndicator(color: scheme.primary),
+    );
+  }
+}
+
+final class _ArticleImagePlaceholder extends StatelessWidget {
+  const _ArticleImagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 180),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported_outlined,
+            size: 36,
+            color: scheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Image unavailable',
+            style: Theme.of(context).textTheme.labelLarge
+                ?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 }

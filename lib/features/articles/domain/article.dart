@@ -16,6 +16,8 @@ class Article {
     this.siteName,
     this.language,
     this.publishedAt,
+    this.readAt,
+    this.archivedAt,
   });
 
   final int id;
@@ -28,6 +30,8 @@ class Article {
   final String? siteName;
   final String? language;
   final DateTime? publishedAt;
+  final DateTime? readAt;
+  final DateTime? archivedAt;
   final String contentHtml;
   final String contentText;
   final int estimatedReadingMinutes;
@@ -36,4 +40,8 @@ class Article {
   final DateTime updatedAt;
 
   bool get isLinkOnly => extractorVersion.startsWith('link-only/');
+
+  bool get isRead => readAt != null;
+
+  bool get isArchived => archivedAt != null;
 }
