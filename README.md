@@ -10,63 +10,43 @@ Readex is a local-first read-it-later app built with Flutter. It turns web pages
 
 The following images show the light and dark mode interfaces.
 
-| 浅色模式 / Light mode | 深色模式 / Dark mode |
-| ----------------- | ---------------- |
-|                   |                  |
+![Readex light mode preview](https://raw.githubusercontent.com/llMooreyll/Readex_flutter/main/example/overview_light.jpg)
+
+![Readex dark mode preview](https://raw.githubusercontent.com/llMooreyll/Readex_flutter/main/example/overview_dark.jpg)
 
 ## 功能特点 / Features
 
-### 🔗 多平台链接导入 / Link Import
+### 1. 🔗 链接导入 / Link Import
 
-| 中文                                   | English                                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| 在应用内输入链接，或从其他 Android 应用的系统分享面板发送链接。 | Enter a URL in the app or share a link from another Android app through the system share sheet. |
-| 分享的链接会自动进入解析和入库预览流程。                 | Shared links automatically enter the extraction and save-preview flow.                          |
-| 支持普通网页、文章链接以及无法解析时的 link-only 条目。    | Supports regular web pages, article URLs, and link-only entries when extraction is unavailable. |
+Readex 支持在应用内输入网页链接，也支持从其他 Android 应用的系统分享面板接收链接。收到的链接会自动进入抓取、解析和入库前预览流程；当页面无法解析时，应用仍然可以保存包含标题和 URL 的 link-only 条目，方便用户之后主动在浏览器中打开。
 
-### 📖 网页解析与阅读 / Extraction and Reading
+Readex accepts URLs entered in the app and links shared from other Android apps through the system share sheet. Shared links automatically enter the fetch, extraction, and pre-save preview flow. When a page cannot be parsed, Readex can still save a link-only entry containing the available title and URL for later browser access.
 
-| 中文                                       | English                                                                                                                                                         |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 使用 reader-mode 流程提取正文，并使用 HTML 解析作为回退方案。 | Extracts article content through a reader-mode pipeline with an HTML parser fallback.                                                                           |
-| 文章内容在 Readex 内渲染，不需要先打开浏览器。              | Renders article content inside Readex without opening the browser first.                                                                                        |
-| 网站验证、反爬或解析失败时，不绕过保护机制，而是保留标题和链接供浏览器打开。   | When verification, anti-bot protection, or extraction failure occurs, Readex does not bypass the protection and preserves the title and URL for browser access. |
-| 文章图片无法加载或解码失败时显示占位内容。                    | Shows a placeholder when an article image cannot be loaded or decoded.                                                                                          |
+### 2. 📖 内容解析与阅读 / Extraction and Reading
 
-### 🗃️ 本地文章管理 / Local Library
+应用使用 reader-mode 流程提取正文，并在必要时使用 HTML 解析作为回退方案，然后在 Readex 内渲染保存的文章。网站验证、反爬或 JavaScript 限制不会被绕过；如果正文或图片无法获取，应用会显示 link-only 内容或图片占位内容，保证阅读流程有明确的结果。
 
-| 中文                            | English                                                               |
-| ----------------------------- | --------------------------------------------------------------------- |
-| 使用 Drift/SQLite 将文章保存在设备本地。   | Stores articles locally with Drift/SQLite.                            |
-| 提供 Library 和 Archived 两个列表视图。 | Provides Library and Archived list views.                             |
-| 向右滑动条目进行存档，向左滑动条目进行删除。        | Swipe right to archive and swipe left to delete.                      |
-| 存档和删除后提供带 Undo 的浮动 Snackbar。  | Shows a floating Snackbar with Undo after archive and delete actions. |
-| 支持将条目标记为已读或未读，已读条目使用低强调文字显示。  | Mark items as read or unread, with visibly muted text for read items. |
+The app extracts article content through a reader-mode pipeline with an HTML parser fallback when needed, then renders saved content inside Readex. Website verification, anti-bot protection, and JavaScript restrictions are not bypassed. If text or images cannot be retrieved, Readex shows a link-only entry or an image placeholder so the result remains clear and usable.
 
-### ✏️ 元数据编辑 / Metadata Editing
+### 3. 🗃️ 本地管理与编辑 / Local Management and Editing
 
-| 中文                           | English                                                                           |
-| ---------------------------- | --------------------------------------------------------------------------------- |
-| 可以修改已保存文章的标题、作者、来源和摘要。       | Edit the title, author, source, and summary of saved articles.                    |
-| 正文内容保持不变，元数据修改独立保存。          | Article bodies remain unchanged while metadata is updated independently.          |
-| 入库前可以预览抓取结果、修改元数据，然后选择保存或丢弃。 | Preview extracted data, edit metadata, and then save or discard before insertion. |
+文章使用 Drift/SQLite 保存在设备本地，不需要账号、服务器或同步服务。用户可以在 Library 和 Archived 视图之间切换，向右滑动存档、向左滑动删除，并通过浮动 Snackbar 撤销操作；还可以标记已读或未读，以及编辑标题、作者、来源和摘要等元数据，而不会改变已保存的正文内容。
 
-### 🎨 主题与交互 / Theme and Interaction
+Articles are stored locally with Drift/SQLite, without an account, server, or sync service. Users can switch between Library and Archived views, swipe right to archive, swipe left to delete, and undo actions from a floating Snackbar. Articles can also be marked as read or unread, and their title, author, source, and summary can be edited without changing the stored body.
 
-| 中文                                       | English                                                                                        |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 使用 Material 3 设计，包含浮动导航栏和浮动添加按钮。         | Uses Material 3 with a floating navigation bar and floating add action.                        |
-| 支持系统、浅色和深色主题。                            | Supports system, light, and dark themes.                                                       |
-| 支持 Android Dynamic Color；不可用时使用红色主色回退方案。 | Supports Android Dynamic Color, with a red seed-color fallback when unavailable.               |
-| 底部弹出页面、左右滑动、列表重排和撤销反馈均配有简洁连贯的动画。         | Uses concise, consistent motion for sheets, swipe actions, list reordering, and undo feedback. |
+### 4. 🎨 Material 3 主题与动画 / Material 3, Themes, and Motion
+
+界面采用 Material 3 设计，包含浮动导航栏、浮动添加按钮、响应式布局和清晰紧凑的条目展示。应用支持系统、浅色和深色主题，并在支持的 Android 版本上使用 Dynamic Color；底部弹出页面、左右滑动、列表重排和撤销反馈都配有简洁连贯的动画效果。
+
+The interface uses Material 3 with a floating navigation bar, floating add action, responsive layouts, and compact article rows. It supports system, light, and dark themes, and uses Dynamic Color on supported Android versions. Bottom sheets, swipe actions, list reordering, and undo feedback use concise, consistent motion.
 
 ## 下载 / Download
 
-请前往 GitHub Releases 页面下载最新 Android APK：
+请前往 GitHub Releases 页面下载最新 Android APK，不再从代码仓库下载 APK：
 
-Download the latest Android APK from GitHub Releases:
+Download the latest Android APK from GitHub Releases instead of the source repository:
 
-[**打开 GitHub Releases / Open GitHub Releases**](https://github.com/llMooreyll/Readex_flutter/releases)
+[打开 GitHub Releases / Open GitHub Releases](https://github.com/llMooreyll/Readex_flutter/releases)
 
 下载 APK 后可以直接安装到 Android 设备。Android 可能会要求允许当前来源安装未知应用。应用 ID 是 `com.heraklysia.read_it_later`。
 
@@ -80,14 +60,12 @@ Article import, extraction, local database, and reader UI are implemented in Dar
 
 ## 开发环境 / Development Environment
 
-| 项目 / Item               | 版本 / Version                   |
-| ----------------------- | ------------------------------ |
-| Flutter                 | 3.47.1 stable                  |
-| Dart                    | 3.13.1                         |
-| Android SDK Platform    | 36                             |
-| Android SDK Build-Tools | 36.0.0                         |
-| Android NDK             | 28.2.13676358                  |
-| Android application ID  | `com.heraklysia.read_it_later` |
+- Flutter 3.47.1 stable
+- Dart 3.13.1
+- Android SDK Platform 36
+- Android SDK Build-Tools 36.0.0
+- Android NDK 28.2.13676358
+- Android application ID: `com.heraklysia.read_it_later`
 
 ## 开发命令 / Development Commands
 
@@ -106,15 +84,13 @@ flutter run -d emulator-5554
 
 ## 项目结构 / Project Structure
 
-| 目录 / Directory                        | 内容 / Contents                                                                           |
-| ------------------------------------- | --------------------------------------------------------------------------------------- |
-| `lib/app/`                            | 应用启动、路由、主题、动画和分享链接集成 / Bootstrap, routing, themes, motion, and share-link integration   |
-| `lib/features/articles/domain/`       | 文章实体和仓储接口 / Article entities and repository contracts                                   |
-| `lib/features/articles/application/`  | 导入、保存、编辑、阅读、存档和删除用例 / Import, save, edit, read, archive, and delete use cases           |
-| `lib/features/articles/data/`         | Drift 数据库、仓储、下载器和解析流程 / Drift database, repository, downloader, and extraction pipeline |
-| `lib/features/articles/presentation/` | 库页面、阅读页面、导入、预览和元数据编辑 / Library, reader, import, preview, and metadata editing UI        |
-| `test/`                               | 单元测试和 Widget 测试 / Unit and widget tests                                                 |
-| `example/`                            | 浅色和深色模式总览图 / Light and dark mode overview images                                        |
+- `lib/app/`：应用启动、路由、主题、动画和分享链接集成 / Bootstrap, routing, themes, motion, and share-link integration
+- `lib/features/articles/domain/`：文章实体和仓储接口 / Article entities and repository contracts
+- `lib/features/articles/application/`：导入、保存、编辑、阅读、存档和删除用例 / Import, save, edit, read, archive, and delete use cases
+- `lib/features/articles/data/`：Drift 数据库、仓储、下载器和解析流程 / Drift database, repository, downloader, and extraction pipeline
+- `lib/features/articles/presentation/`：库页面、阅读页面、导入、预览和元数据编辑 / Library, reader, import, preview, and metadata editing UI
+- `test/`：单元测试和 Widget 测试 / Unit and widget tests
+- `example/`：浅色和深色模式总览图 / Light and dark mode overview images
 
 机器相关文件，例如 `android/local.properties`、签名凭据、构建输出和 Gradle 缓存，均已排除在版本控制之外。
 
